@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -38,23 +40,60 @@ namespace dogapi_SofiaZaid.Controllers
 
         // POST api/values
         [HttpPost]
-        public void Post([FromBody]string value)
+        public void Post([FromBody]test2.Models.Dog dog)
         {
-            //dogs.Add(value);
+            if(dog == null)
+            {
+                BadRequest("400");
+            }
+            string output = JsonConvert.SerializeObject(dog);
+            System.IO.File.WriteAllText(@".\DogFiles\" + dog.BreedName + ".json",output);
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        public void Put(string id, [FromBody] Dictionary<string,string> dogUpdate)
         {
-            //dogs[id] = value;
+            var specificDog = dogs.Where(dog => dog.BreedName == id).FirstOrDefault();
+            if (specificDog == null)
+            {
+                NotFound("Resource not found on server.");
+            }
+            else
+            {
+                if(dogUpdate.ContainsKey("wikipediaUrl"))
+                {
+                    specificDog.WikipediaUrl = dogUpdate["wikipediaUrl"];
+                }
+                if (dogUpdate.ContainsKey("breedName"))
+                {
+                    specificDog.BreedName = dogUpdate["breedName"];
+                }
+                if (dogUpdate.ContainsKey("description"))
+                {
+                    specificDog.Description = dogUpdate["description"];
+                }
+                
+                System.IO.File.WriteAllText(@".\DogFiles\" + specificDog.BreedName + ".json", JsonConvert.SerializeObject(specificDog));
+                if (specificDog.BreedName.ToLower()!=id.ToLower())
+                {
+                    System.IO.File.Delete(@".\DogFiles\" + id + ".json");
+                }
+            }
         }
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public void Delete(string id)
         {
-            //dogs.RemoveAt(id);
+            if (dogs.Select(dog => dog.BreedName).Contains(id))
+            {
+                System.IO.File.Delete(@".\DogFiles\" + id + ".json");
+            }
+            else
+            {
+                    NotFound("Resource not found on server.");
+            }
         }
     }
 }
